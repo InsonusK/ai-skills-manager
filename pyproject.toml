@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [project.scripts]
-ai-skills-sync = "ai_skills_sync.cli:main"
+ai-skills-sync = "ai_skills_manager.cli:main"
 
 [project.optional-dependencies]
 dev = [
