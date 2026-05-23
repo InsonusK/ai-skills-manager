@@ -6,14 +6,14 @@ import shutil
 import json
 from pathlib import Path
 
-from ai_skills_sync.core import (
+from ai_skills_manager.core import (
     SkillSync,
     build_source_to_target_map,
     collect_source_files,
     copy_skill,
 )
-from ai_skills_sync.discovery.base import SkillMapping
-from ai_skills_sync.utils import is_managed
+from ai_skills_manager.discovery.base import SkillMapping
+from ai_skills_manager.utils import is_managed
 
 
 class TestBuildSourceToTargetMap(unittest.TestCase):
@@ -243,7 +243,7 @@ class TestSkillSyncIntegration(unittest.TestCase):
 
         old = target / 'old-skill'
         old.mkdir()
-        from ai_skills_sync.utils import tag_managed
+        from ai_skills_manager.utils import tag_managed
         tag_managed(old)
 
         src = self.tmpdir / 'repo'

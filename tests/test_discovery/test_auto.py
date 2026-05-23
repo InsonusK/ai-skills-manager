@@ -5,8 +5,8 @@ import tempfile
 import shutil
 from pathlib import Path
 
-from ai_skills_sync.discovery.auto import AutoDiscovery
-from ai_skills_sync.discovery.base import SkillMapping
+from ai_skills_manager.discovery.auto import AutoDiscovery
+from ai_skills_manager.discovery.base import SkillMapping
 
 
 class TestAutoDiscovery(unittest.TestCase):

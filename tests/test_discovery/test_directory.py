@@ -5,7 +5,7 @@ import tempfile
 import shutil
 from pathlib import Path
 
-from ai_skills_sync.discovery.directory import DirectoryDiscovery
+from ai_skills_manager.discovery.directory import DirectoryDiscovery
 
 
 class TestDirectoryDiscovery(unittest.TestCase):

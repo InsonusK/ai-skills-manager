@@ -5,7 +5,7 @@ from pathlib import Path
 import tempfile
 import shutil
 
-from ai_skills_sync.utils import compute_hash, is_managed, tag_managed
+from ai_skills_manager.utils import compute_hash, is_managed, tag_managed
 
 
 class TestComputeHash(unittest.TestCase):

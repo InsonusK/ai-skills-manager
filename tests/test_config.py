@@ -5,7 +5,7 @@ import tempfile
 import json
 from pathlib import Path
 
-from ai_skills_sync.config import load_config
+from ai_skills_manager.config import load_config
 
 
 class TestLoadConfig(unittest.TestCase):

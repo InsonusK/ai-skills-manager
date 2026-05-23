@@ -12,7 +12,7 @@ import re
 from pathlib import Path
 from typing import Dict, List, Set, Optional
 
-from ai_skills_sync.discovery.base import SkillMapping
+from ai_skills_manager.discovery.base import SkillMapping
 
 MD_LINK_RE = re.compile(r'!?\[([^\]]*)\]\(([^\s\)"]*)(?:\s+"[^"]*")?\)')
 

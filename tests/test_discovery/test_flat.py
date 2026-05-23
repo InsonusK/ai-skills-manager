@@ -5,7 +5,7 @@ import tempfile
 import shutil
 from pathlib import Path
 
-from ai_skills_sync.discovery.flat import FlatDiscovery
+from ai_skills_manager.discovery.flat import FlatDiscovery
 
 
 class TestFlatDiscovery(unittest.TestCase):
