@@ -12,6 +12,7 @@ Clone the repository and install in editable mode:
 ```bash
 git clone https://github.com/InsonusK/ai-skills-manager
 cd ai-skill-manager
+python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .
 ```
