@@ -7,6 +7,7 @@ Rules:
 - Broken links -> left as-is, reported in validation
 """
 
+import logging
 import os
 import re
 from pathlib import Path
@@ -15,6 +16,8 @@ from typing import Dict, List, Set, Optional
 from ai_skills_manager.discovery.base import SkillMapping
 
 MD_LINK_RE = re.compile(r'!?\[([^\]]*)\]\(([^\s\)"]*)(?:\s+"[^"]*")?\)')
+
+logger = logging.getLogger(__name__)
 
 
 class LinkUpdater:
@@ -86,6 +89,12 @@ class LinkUpdater:
                 new_target = self.source_to_target[linked_source]
                 try:
                     new_rel = os.path.relpath(new_target, filepath.parent).replace(os.sep, "/")
+                    logger.debug(
+                        "- Change link %s -> %s\n"
+                        "   source file %s\n"
+                        "   target file %s",
+                        link_path, new_rel, filepath, new_target
+                    )
                     self.fixes.append({
                         "file": str(filepath),
                         "old": link_path,
@@ -106,6 +115,12 @@ class LinkUpdater:
             if linked_source.exists():
                 try:
                     new_rel = os.path.relpath(linked_source, filepath.parent).replace(os.sep, "/")
+                    logger.debug(
+                        "- Change link %s -> %s\n"
+                        "   source file %s\n"
+                        "   target file %s",
+                        link_path, new_rel, filepath, linked_source
+                    )
                     self.fixes.append({
                         "file": str(filepath),
                         "old": link_path,
