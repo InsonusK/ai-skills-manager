@@ -48,9 +48,9 @@ jobs:
       - name: Build package
         run: python -m build
 
-      - name: Publish to GitHub Packages
-        env:
-          TWINE_USERNAME: ${{ github.actor }}
-          TWINE_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          twine upload --repository-url "https://pypi.pkg.github.com/${{ github.repository_owner }}" dist/*
+      #- name: Publish to GitHub Packages
+      #  env:
+      #    TWINE_USERNAME: ${{ github.actor }}
+      #    TWINE_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+      #  run: |
+      #    twine upload --repository-url "https://pypi.pkg.github.com/${{ github.repository_owner }}/ai-skills-manager" dist/*

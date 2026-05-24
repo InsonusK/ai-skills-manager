@@ -1,5 +1,6 @@
 """Command-line interface."""
 
+import logging
 import sys
 import argparse
 from pathlib import Path
@@ -32,8 +33,13 @@ Examples:
                         help='Keep orphan skills')
     parser.add_argument('--dry-run', action='store_true',
                         help='Preview changes')
+    parser.add_argument('-v', '--verbose', action='store_true',
+                        help='Enable debug logging')
 
     args = parser.parse_args()
+
+    if args.verbose:
+        logging.basicConfig(level=logging.DEBUG, format='%(message)s')
 
     config_path = Path(args.config).resolve()
     if not config_path.exists():
