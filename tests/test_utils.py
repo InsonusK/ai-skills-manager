@@ -71,5 +71,29 @@ class TestManagedTag(unittest.TestCase):
         self.assertTrue(is_managed(self.tmpdir))
 
 
+class TestManagedState(unittest.TestCase):
+    def setUp(self):
+        self.tmpdir = Path(tempfile.mkdtemp())
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
+
+    def test_read_write_managed_state(self):
+        from ai_skills_manager.utils import read_managed_state, write_managed_state
+        state = {'hash': 'abc123', 'adapters': [{'name': 'LinkUpdater', 'version': 1}]}
+        write_managed_state(self.tmpdir, state)
+        self.assertEqual(read_managed_state(self.tmpdir), state)
+
+    def test_read_managed_state_invalid_content(self):
+        from ai_skills_manager.utils import read_managed_state
+        path = self.tmpdir / '.ai-skills-managed'
+        path.write_text('not-json')
+        self.assertIsNone(read_managed_state(self.tmpdir))
+
+    def test_read_managed_state_missing_file(self):
+        from ai_skills_manager.utils import read_managed_state
+        self.assertIsNone(read_managed_state(self.tmpdir))
+
+
 if __name__ == '__main__':
     unittest.main()

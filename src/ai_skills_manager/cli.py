@@ -33,6 +33,8 @@ Examples:
                         help='Keep orphan skills')
     parser.add_argument('--dry-run', action='store_true',
                         help='Preview changes')
+    parser.add_argument('-f', '--force', action='store_true',
+                        help='Force copy all skills, skip hash and version checks')
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='Enable debug logging')
 
@@ -59,12 +61,16 @@ Examples:
             target_dir=Path(args.target) if args.target else None,
             on_conflict=args.on_conflict or 'error',
             remove_orphans=remove if remove is not None else True,
-            dry_run=args.dry_run
+            dry_run=args.dry_run,
+            force=args.force
         )
 
         result = sync.sync()
 
         print(f"\n📊 Synced: {result['synced_count']} skills")
+
+        if result.get('skipped_count', 0) > 0:
+            print(f"   ⏭️  skipped: {result['skipped_count']}")
 
         if result['fix_summary']:
             print(f"\n🔗 Links:")
