@@ -23,6 +23,8 @@ logger = logging.getLogger(__name__)
 class LinkUpdater:
     """Updates Markdown links to match new target structure."""
 
+    version: int = 1
+
     def __init__(
         self,
         mappings: List[SkillMapping],

@@ -262,6 +262,86 @@ class TestSkillSyncIntegration(unittest.TestCase):
         self.assertFalse(old.exists())
         self.assertTrue((target / 'new').exists())
 
+    def test_skip_when_unchanged(self):
+        src = self.tmpdir / 'repo'
+        src.mkdir()
+        (src / 'guide.md').write_text('# Guide')
+
+        config = self.tmpdir / 'ai-skills.yaml'
+        config.write_text(json.dumps({
+            'sources': [{'path': './repo'}]
+        }))
+
+        sync = SkillSync(config_file=config)
+        result1 = sync.sync()
+        self.assertEqual(result1['synced_count'], 1)
+        self.assertEqual(result1['skipped_count'], 0)
+
+        result2 = sync.sync()
+        self.assertEqual(result2['synced_count'], 0)
+        self.assertEqual(result2['skipped_count'], 1)
+
+    def test_copy_when_source_changed(self):
+        src = self.tmpdir / 'repo'
+        src.mkdir()
+        (src / 'guide.md').write_text('# Guide')
+
+        config = self.tmpdir / 'ai-skills.yaml'
+        config.write_text(json.dumps({
+            'sources': [{'path': './repo'}]
+        }))
+
+        sync = SkillSync(config_file=config)
+        sync.sync()
+
+        (src / 'guide.md').write_text('# Guide Updated')
+
+        result = sync.sync()
+        self.assertEqual(result['synced_count'], 1)
+        self.assertEqual(result['skipped_count'], 0)
+
+    def test_force_copies_unchanged(self):
+        src = self.tmpdir / 'repo'
+        src.mkdir()
+        (src / 'guide.md').write_text('# Guide')
+
+        config = self.tmpdir / 'ai-skills.yaml'
+        config.write_text(json.dumps({
+            'sources': [{'path': './repo'}]
+        }))
+
+        sync = SkillSync(config_file=config)
+        sync.sync()
+
+        sync_force = SkillSync(config_file=config, force=True)
+        result = sync_force.sync()
+        self.assertEqual(result['synced_count'], 1)
+        self.assertEqual(result['skipped_count'], 0)
+
+    def test_copy_when_adapter_version_changed(self):
+        src = self.tmpdir / 'repo'
+        src.mkdir()
+        (src / 'guide.md').write_text('# Guide')
+
+        config = self.tmpdir / 'ai-skills.yaml'
+        config.write_text(json.dumps({
+            'sources': [{'path': './repo'}]
+        }))
+
+        sync = SkillSync(config_file=config)
+        sync.sync()
+
+        # Simulate adapter version change
+        from ai_skills_manager.utils import read_managed_state, write_managed_state
+        target = self.tmpdir / '.agents' / 'skills' / 'guide'
+        state = read_managed_state(target)
+        state['adapters'][0]['version'] = 999
+        write_managed_state(target, state)
+
+        result = sync.sync()
+        self.assertEqual(result['synced_count'], 1)
+        self.assertEqual(result['skipped_count'], 0)
+
 
 if __name__ == '__main__':
     unittest.main()
