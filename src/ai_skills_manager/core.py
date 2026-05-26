@@ -10,6 +10,7 @@ from .discovery.base import SkillMapping
 from .discovery.auto import AutoDiscovery
 from .discovery.flat import FlatDiscovery
 from .discovery.directory import DirectoryDiscovery
+from .discovery.github import GitHubDiscovery
 from .adapters.link_updater import LinkUpdater
 from .utils import is_managed, tag_managed, compute_hash, read_managed_state, write_managed_state
 
@@ -18,6 +19,7 @@ STRATEGIES = {
     'auto': AutoDiscovery,
     'flat': FlatDiscovery,
     'directory': DirectoryDiscovery,
+    'github': GitHubDiscovery,
 }
 
 
@@ -187,11 +189,21 @@ class SkillSync:
         all_mappings: List[SkillMapping] = []
 
         for src in sources:
-            src_path = self.config_dir / src.get('path', '.')
             src_type = src.get('type', 'auto')
             strategy_class = STRATEGIES.get(src_type, AutoDiscovery)
 
-            strategy = strategy_class(src_path, self.target_dir)
+            if src_type == 'github':
+                repo_url = src.get('path', '')
+                tree = src.get('tree', 'master')
+                subfolder = src.get('subfolder', 'skills')
+                scan = src.get('scan', 'auto')
+                strategy = strategy_class(
+                    repo_url, self.target_dir, tree=tree, subfolder=subfolder, scan=scan
+                )
+            else:
+                src_path = self.config_dir / src.get('path', '.')
+                strategy = strategy_class(src_path, self.target_dir)
+
             discovered = strategy.discover()
 
             # Apply explicit name override
