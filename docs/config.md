@@ -28,8 +28,8 @@ List of source locations to scan for skills. Each source is a dictionary with th
 
 | Field | Required | Default | Description |
 |-------|----------|---------|-------------|
-| `path` | Yes | — | Directory path relative to the config file |
-| `type` | No | `auto` | Discovery strategy: `auto`, `flat`, or `directory` |
+| `path` | Yes | — | Directory path relative to the config file (or GitHub repo URL when `type: github`) |
+| `type` | No | `auto` | Discovery strategy: `auto`, `flat`, `directory`, or `github` |
 | `name` | No | — | Explicit skill name override |
 
 ### Discovery types
@@ -73,6 +73,28 @@ Result target:
   web/
     SKILL.md
     extra.md
+```
+
+#### `github`
+Downloads a GitHub repository archive and discovers skills from a subfolder within it.
+
+**Additional fields:**
+
+| Field | Required | Default | Description |
+|-------|----------|---------|-------------|
+| `path` | Yes | — | GitHub repository URL (`https` or `ssh` format) |
+| `tree` | No | `master` | Branch or tag name to checkout |
+| `subfolder` | No | `skills` | Folder inside the repo to scan for skills |
+| `scan` | No | `auto` | Scan mode for the subfolder: `auto`, `flat`, or `dir` |
+
+Example:
+```yaml
+sources:
+  - path: https://github.com/owner/skills-repo.git
+    type: github
+    tree: main
+    subfolder: skills
+    scan: auto
 ```
 
 ## `settings`

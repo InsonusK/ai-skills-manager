@@ -7,7 +7,11 @@ from pathlib import Path
 class FileAdapter(ABC):
     """Adapts files after copying to target."""
 
-    version: int = 1
+    @property
+    @abstractmethod
+    def version(self) -> int:
+        """Adapter version for change detection."""
+        pass
 
     @abstractmethod
     def adapt(self, filepath: Path) -> None:
