@@ -1,0 +1,15 @@
+# {{ task name up to 10 words }}
+## Input
+{{ User input promt }}
+
+## Understanding
+{{ How you understand task }}
+
+## Used skills
+{% for used_skill in used_skills %}
+### {{ Skill name }}
+{% if used_skill has check list %}
+{{ filled used_skill check list }}
+{% else %}
+{{ check list what have you done by skill }}
+{% endif %}

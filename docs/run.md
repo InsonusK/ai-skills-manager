@@ -6,7 +6,10 @@ By default, the tool looks for `ai-skills.yaml` in the current directory and syn
 
 ```bash
 # Use default config (ai-skills.yaml)
-ai-skills
+ai-skill-manager
+
+# Or use the short alias
+aism
 
 # Or run via module
 python -m ai_skills_manager.cli
@@ -15,7 +18,7 @@ python -m ai_skills_manager.cli
 ## Custom config file
 
 ```bash
-ai-skills -c ./config/my-skills.yaml
+ai-skill-manager -c ./config/my-skills.yaml
 ```
 
 ## Common options
@@ -34,29 +37,29 @@ ai-skills -c ./config/my-skills.yaml
 ### Preview changes
 
 ```bash
-ai-skills --dry-run
+ai-skill-manager --dry-run
 ```
 
 ### Override target directory
 
 ```bash
-ai-skills --target ./my-skills
+ai-skill-manager --target ./my-skills
 ```
 
 ### Force orphan removal
 
 ```bash
-ai-skills --remove-orphans
+ai-skill-manager --remove-orphans
 ```
 
 ### Keep orphan skills
 
 ```bash
-ai-skills --keep-orphans
+ai-skill-manager --keep-orphans
 ```
 
 ### Set conflict resolution
 
 ```bash
-ai-skills --on-conflict last_wins
+ai-skill-manager --on-conflict last_wins
 ```

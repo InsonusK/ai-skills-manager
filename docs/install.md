@@ -29,10 +29,16 @@ pip install -r requirements.txt
 
 ## Verify installation
 
-After installation, the `ai-skills` command should be available:
+After installation, the `ai-skill-manager` command should be available:
 
 ```bash
-ai-skills --help
+ai-skill-manager --help
+```
+
+The command also has a short alias:
+
+```bash
+aism --help
 ```
 
 Or run the CLI module directly:

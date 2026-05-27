@@ -88,19 +88,19 @@ class TestNewCommand(unittest.TestCase):
 
 class TestCLIEntrypoint(unittest.TestCase):
     def test_help_shows_subcommands(self):
-        with patch('sys.argv', ['ai-skills', '--help']):
+        with patch('sys.argv', ['ai-skill-manager', '--help']):
             with self.assertRaises(SystemExit) as cm:
                 main()
             self.assertEqual(cm.exception.code, 0)
 
     def test_sync_help(self):
-        with patch('sys.argv', ['ai-skills', 'sync', '--help']):
+        with patch('sys.argv', ['ai-skill-manager', 'sync', '--help']):
             with self.assertRaises(SystemExit) as cm:
                 main()
             self.assertEqual(cm.exception.code, 0)
 
     def test_new_help(self):
-        with patch('sys.argv', ['ai-skills', 'new', '--help']):
+        with patch('sys.argv', ['ai-skill-manager', 'new', '--help']):
             with self.assertRaises(SystemExit) as cm:
                 main()
             self.assertEqual(cm.exception.code, 0)

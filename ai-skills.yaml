@@ -1,0 +1,12 @@
+sources:
+  - path: https://github.com/InsonusK/ai-skills.git
+    type: github
+    tree: master
+    subpath:
+      - skills/workflow
+
+settings:
+  target: .agents/skills
+  remove_orphans: true
+  on_conflict: error
+  dry_run: false
