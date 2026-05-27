@@ -197,10 +197,9 @@ class SkillSync:
                 if src_type == 'github':
                     repo_url = src.get('path', '')
                     tree = src.get('tree', 'master')
-                    subfolder = src.get('subfolder', 'skills')
-                    scan = src.get('scan', 'auto')
+                    subpath = src.get('subpath', 'skills')
                     strategy = strategy_class(
-                        repo_url, self.target_dir, tree=tree, subfolder=subfolder, scan=scan
+                        repo_url, self.target_dir, tree=tree, subpath=subpath
                     )
                 else:
                     src_path = self.config_dir / src.get('path', '.')

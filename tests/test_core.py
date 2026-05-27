@@ -380,8 +380,7 @@ class TestSkillSyncIntegration(unittest.TestCase):
                 'type': 'github',
                 'path': 'https://github.com/owner/ai-skills',
                 'tree': 'master',
-                'subfolder': 'skills',
-                'scan': 'auto',
+                'subpath': 'skills',
             }],
             'settings': {'target': '.agents/skills'}
         }))
@@ -423,7 +422,7 @@ class TestSkillSyncIntegration(unittest.TestCase):
                 'type': 'github',
                 'path': 'https://github.com/owner/ai-skills',
                 'tree': 'master',
-                'subfolder': 'docs/quickstart.md',
+                'subpath': 'docs/quickstart.md',
             }],
             'settings': {'target': '.agents/skills'}
         }))
@@ -442,6 +441,48 @@ class TestSkillSyncIntegration(unittest.TestCase):
         self.assertTrue(target.exists())
         self.assertTrue((target / 'SKILL.md').exists())
         self.assertEqual((target / 'SKILL.md').read_text(), '# Quickstart')
+
+    def test_github_source_multiple_subpaths_sync(self):
+        """Sync from a mocked GitHub source with multiple subpaths."""
+        archive = _make_fake_archive(
+            "ai-skills-master",
+            {
+                "skills/web/SKILL.md": "# Web",
+                "docs/guide.md": "# Guide",
+            },
+        )
+
+        def fake_download(owner, repo, tree):
+            path = self.tmpdir / 'fake_archive.tar.gz'
+            path.write_bytes(archive)
+            return path
+
+        config = self.tmpdir / 'ai-skills.yaml'
+        config.write_text(json.dumps({
+            'sources': [{
+                'type': 'github',
+                'path': 'https://github.com/owner/ai-skills',
+                'tree': 'master',
+                'subpath': ['skills', 'docs'],
+            }],
+            'settings': {'target': '.agents/skills'}
+        }))
+
+        with patch(
+            'ai_skills_manager.discovery.github._download_archive',
+            side_effect=fake_download,
+        ):
+            sync = SkillSync(config_file=config)
+            result = sync.sync()
+
+        self.assertEqual(result['synced_count'], 2)
+        self.assertEqual(result['skipped_count'], 0)
+
+        target = self.tmpdir / '.agents' / 'skills'
+        self.assertTrue((target / 'web').exists())
+        self.assertTrue((target / 'web' / 'SKILL.md').exists())
+        self.assertTrue((target / 'guide').exists())
+        self.assertTrue((target / 'guide' / 'SKILL.md').exists())
 
 
 if __name__ == '__main__':

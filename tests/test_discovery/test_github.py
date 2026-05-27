@@ -12,9 +12,6 @@ from ai_skills_manager.discovery.github import (
     _parse_github_url,
     _find_extracted_root,
 )
-from ai_skills_manager.discovery.auto import AutoDiscovery
-from ai_skills_manager.discovery.flat import FlatDiscovery
-from ai_skills_manager.discovery.directory import DirectoryDiscovery
 from ai_skills_manager.core import copy_skill
 
 
@@ -86,7 +83,7 @@ class TestGitHubDiscovery(unittest.TestCase):
             side_effect=fake_download,
         )
 
-    def test_discover_auto_flat_files(self):
+    def test_discover_flat_files(self):
         archive = _make_fake_archive(
             "repo-main",
             {
@@ -100,8 +97,7 @@ class TestGitHubDiscovery(unittest.TestCase):
                 "https://github.com/owner/repo",
                 self.target,
                 tree="main",
-                subfolder="skills",
-                scan="auto",
+                subpath="skills",
             )
             result = strategy.discover()
 
@@ -109,7 +105,7 @@ class TestGitHubDiscovery(unittest.TestCase):
         names = {r.skill_name for r in result}
         self.assertEqual(names, {"guide", "tips"})
 
-    def test_discover_auto_directory_skills(self):
+    def test_discover_directory_skills(self):
         archive = _make_fake_archive(
             "repo-main",
             {
@@ -123,8 +119,7 @@ class TestGitHubDiscovery(unittest.TestCase):
                 "https://github.com/owner/repo",
                 self.target,
                 tree="main",
-                subfolder="skills",
-                scan="auto",
+                subpath="skills",
             )
             result = strategy.discover()
 
@@ -132,55 +127,7 @@ class TestGitHubDiscovery(unittest.TestCase):
         self.assertEqual(result[0].skill_name, "web")
         self.assertFalse(result[0].is_flat)
 
-    def test_discover_flat_scan(self):
-        archive = _make_fake_archive(
-            "repo-main",
-            {
-                "skills/nested/SKILL.md": "# Nested",
-                "skills/top.md": "# Top",
-            },
-        )
-
-        with self._mock_download(archive):
-            strategy = GitHubDiscovery(
-                "https://github.com/owner/repo",
-                self.target,
-                tree="main",
-                subfolder="skills",
-                scan="flat",
-            )
-            result = strategy.discover()
-
-        names = {r.skill_name for r in result}
-        self.assertEqual(names, {"nested-SKILL", "top"})
-        for mapping in result:
-            self.assertTrue(mapping.is_flat)
-
-    def test_discover_dir_scan(self):
-        archive = _make_fake_archive(
-            "repo-main",
-            {
-                "skills/web/SKILL.md": "# Web",
-                "skills/api/SKILL.md": "# API",
-            },
-        )
-
-        with self._mock_download(archive):
-            strategy = GitHubDiscovery(
-                "https://github.com/owner/repo",
-                self.target,
-                tree="main",
-                subfolder="skills",
-                scan="dir",
-            )
-            result = strategy.discover()
-
-        names = {r.skill_name for r in result}
-        self.assertEqual(names, {"web", "api"})
-        for mapping in result:
-            self.assertFalse(mapping.is_flat)
-
-    def test_missing_subfolder_returns_empty(self):
+    def test_missing_subpath_returns_empty(self):
         archive = _make_fake_archive(
             "repo-main",
             {"other/readme.md": "# Readme"},
@@ -191,8 +138,7 @@ class TestGitHubDiscovery(unittest.TestCase):
                 "https://github.com/owner/repo",
                 self.target,
                 tree="main",
-                subfolder="skills",
-                scan="auto",
+                subpath="skills",
             )
             result = strategy.discover()
 
@@ -208,14 +154,14 @@ class TestGitHubDiscovery(unittest.TestCase):
             strategy = GitHubDiscovery(
                 "https://github.com/owner/repo",
                 self.target,
-                subfolder="skills",
+                subpath="skills",
             )
             result = strategy.discover()
 
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].skill_name, "a")
 
-    def test_default_subfolder_skills(self):
+    def test_default_subpath_skills(self):
         archive = _make_fake_archive(
             "repo-main",
             {"skills/b.md": "# B"},
@@ -232,24 +178,6 @@ class TestGitHubDiscovery(unittest.TestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].skill_name, "b")
 
-    def test_default_scan_auto(self):
-        archive = _make_fake_archive(
-            "repo-main",
-            {"skills/c.md": "# C"},
-        )
-
-        with self._mock_download(archive):
-            strategy = GitHubDiscovery(
-                "https://github.com/owner/repo",
-                self.target,
-                tree="main",
-                subfolder="skills",
-            )
-            result = strategy.discover()
-
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0].skill_name, "c")
-
     def test_ssh_url_accepted(self):
         archive = _make_fake_archive(
             "repo-main",
@@ -261,8 +189,7 @@ class TestGitHubDiscovery(unittest.TestCase):
                 "git@github.com:owner/repo.git",
                 self.target,
                 tree="main",
-                subfolder="skills",
-                scan="auto",
+                subpath="skills",
             )
             result = strategy.discover()
 
@@ -288,8 +215,7 @@ class TestGitHubDiscovery(unittest.TestCase):
                 "https://github.com/owner/repo",
                 self.target,
                 tree="main",
-                subfolder="skills",
-                scan="auto",
+                subpath="skills",
             )
             result = strategy.discover()
 
@@ -321,8 +247,7 @@ class TestGitHubDiscovery(unittest.TestCase):
                 "https://github.com/owner/repo",
                 self.target,
                 tree="main",
-                subfolder="skills",
-                scan="auto",
+                subpath="skills",
             )
             result = strategy.discover()
 
@@ -340,7 +265,7 @@ class TestGitHubDiscovery(unittest.TestCase):
         self.assertEqual((skill_dir / "extra.md").read_text(), "# Extra")
 
     def test_discover_single_md_file(self):
-        """A single .md file selected via subfolder is treated as a flat skill."""
+        """A single .md file selected via subpath is treated as a flat skill."""
         archive = _make_fake_archive(
             "repo-main",
             {
@@ -353,8 +278,7 @@ class TestGitHubDiscovery(unittest.TestCase):
                 "https://github.com/owner/repo",
                 self.target,
                 tree="main",
-                subfolder="skills/nested/guide.md",
-                scan="auto",
+                subpath="skills/nested/guide.md",
             )
             result = strategy.discover()
 
@@ -377,7 +301,7 @@ class TestGitHubDiscovery(unittest.TestCase):
                 "https://github.com/owner/repo",
                 self.target,
                 tree="main",
-                subfolder="docs/quickstart.md",
+                subpath="docs/quickstart.md",
             )
             result = strategy.discover()
 
@@ -405,11 +329,81 @@ class TestGitHubDiscovery(unittest.TestCase):
                 "https://github.com/owner/repo",
                 self.target,
                 tree="main",
-                subfolder="skills/missing.md",
+                subpath="skills/missing.md",
             )
             result = strategy.discover()
 
         self.assertEqual(len(result), 0)
+
+    def test_discover_multiple_subpaths(self):
+        """Multiple subpaths can be provided as a list."""
+        archive = _make_fake_archive(
+            "repo-main",
+            {
+                "skills/web/SKILL.md": "# Web",
+                "docs/guide.md": "# Guide",
+            },
+        )
+
+        with self._mock_download(archive):
+            strategy = GitHubDiscovery(
+                "https://github.com/owner/repo",
+                self.target,
+                tree="main",
+                subpath=["skills", "docs"],
+            )
+            result = strategy.discover()
+
+        self.assertEqual(len(result), 2)
+        names = {r.skill_name for r in result}
+        self.assertEqual(names, {"web", "guide"})
+
+    def test_discover_multiple_subpaths_mixed(self):
+        """A list of subpaths can contain both directories and single .md files."""
+        archive = _make_fake_archive(
+            "repo-main",
+            {
+                "skills/web/SKILL.md": "# Web",
+                "docs/quickstart.md": "# Quickstart",
+            },
+        )
+
+        with self._mock_download(archive):
+            strategy = GitHubDiscovery(
+                "https://github.com/owner/repo",
+                self.target,
+                tree="main",
+                subpath=["skills", "docs/quickstart.md"],
+            )
+            result = strategy.discover()
+
+        self.assertEqual(len(result), 2)
+        by_name = {r.skill_name: r for r in result}
+        self.assertIn("web", by_name)
+        self.assertFalse(by_name["web"].is_flat)
+        self.assertIn("quickstart", by_name)
+        self.assertTrue(by_name["quickstart"].is_flat)
+
+    def test_discover_multiple_subpaths_skips_missing(self):
+        """Missing subpaths in a list are skipped rather than failing."""
+        archive = _make_fake_archive(
+            "repo-main",
+            {
+                "skills/guide.md": "# Guide",
+            },
+        )
+
+        with self._mock_download(archive):
+            strategy = GitHubDiscovery(
+                "https://github.com/owner/repo",
+                self.target,
+                tree="main",
+                subpath=["missing", "skills"],
+            )
+            result = strategy.discover()
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].skill_name, "guide")
 
 
 class TestFindExtractedRoot(unittest.TestCase):
