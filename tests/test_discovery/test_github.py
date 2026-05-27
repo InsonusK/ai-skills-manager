@@ -15,6 +15,7 @@ from ai_skills_manager.discovery.github import (
 from ai_skills_manager.discovery.auto import AutoDiscovery
 from ai_skills_manager.discovery.flat import FlatDiscovery
 from ai_skills_manager.discovery.directory import DirectoryDiscovery
+from ai_skills_manager.core import copy_skill
 
 
 def _make_fake_archive(repo_name: str, files: dict) -> bytes:
@@ -267,6 +268,76 @@ class TestGitHubDiscovery(unittest.TestCase):
 
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].skill_name, "x")
+
+    def test_discover_source_paths_remain_valid_after_return(self):
+        """Regression test: source_path must point to real files after discover() returns.
+
+        Previously the extracted temp directory was cleaned up inside the
+        discover() method, so callers got dangling paths.
+        """
+        archive = _make_fake_archive(
+            "repo-main",
+            {
+                "skills/version-control/SKILL.md": "# Version Control",
+                "skills/version-control/extra.md": "# Extra",
+            },
+        )
+
+        with self._mock_download(archive):
+            strategy = GitHubDiscovery(
+                "https://github.com/owner/repo",
+                self.target,
+                tree="main",
+                subfolder="skills",
+                scan="auto",
+            )
+            result = strategy.discover()
+
+        self.assertEqual(len(result), 1)
+        mapping = result[0]
+        self.assertEqual(mapping.skill_name, "version-control")
+        self.assertFalse(mapping.is_flat)
+
+        # The source_path must still exist after discover() returned
+        self.assertTrue(mapping.source_path.exists())
+        self.assertTrue((mapping.source_path / "SKILL.md").exists())
+        self.assertEqual(
+            (mapping.source_path / "SKILL.md").read_text(),
+            "# Version Control",
+        )
+
+    def test_discover_and_copy_directory_skill(self):
+        """End-to-end: discover from GitHub archive and copy skill to target."""
+        archive = _make_fake_archive(
+            "repo-main",
+            {
+                "skills/version-control/SKILL.md": "# Version Control",
+                "skills/version-control/extra.md": "# Extra",
+            },
+        )
+
+        with self._mock_download(archive):
+            strategy = GitHubDiscovery(
+                "https://github.com/owner/repo",
+                self.target,
+                tree="main",
+                subfolder="skills",
+                scan="auto",
+            )
+            result = strategy.discover()
+
+        self.assertEqual(len(result), 1)
+        mapping = result[0]
+
+        copy_skill(mapping, dry_run=False)
+
+        # Verify the skill was copied into the target directory
+        skill_dir = self.target / "version-control"
+        self.assertTrue(skill_dir.exists())
+        self.assertTrue((skill_dir / "SKILL.md").exists())
+        self.assertEqual((skill_dir / "SKILL.md").read_text(), "# Version Control")
+        self.assertTrue((skill_dir / "extra.md").exists())
+        self.assertEqual((skill_dir / "extra.md").read_text(), "# Extra")
 
 
 class TestFindExtractedRoot(unittest.TestCase):
