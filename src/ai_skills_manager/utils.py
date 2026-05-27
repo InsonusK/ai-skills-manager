@@ -1,4 +1,4 @@
-"""Utility functions for ai-skills-sync."""
+"""Utility functions for ai-skills."""
 
 import hashlib
 import json

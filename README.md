@@ -20,7 +20,7 @@ settings:
 Run the sync:
 
 ```bash
-ai-skills-sync
+ai-skills
 ```
 
 ## Documentation

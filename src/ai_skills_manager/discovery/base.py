@@ -1,9 +1,12 @@
 """Base classes for skill discovery."""
 
+import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -19,6 +22,8 @@ class DiscoveryStrategy(ABC):
     """Abstract base for skill discovery strategies."""
 
     def __init__(self, source_path: Path, target_dir: Path):
+        if not source_path.exists():
+            logger.error("source_path not found: %s", source_path)
         self.source_path = source_path.resolve()
         self.target_dir = target_dir
 

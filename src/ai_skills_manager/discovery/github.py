@@ -4,6 +4,7 @@ Downloads a GitHub repository archive, extracts it to a temp directory,
 and discovers skills from one or more subpaths using auto logic.
 """
 
+import logging
 import re
 import shutil
 import tarfile
@@ -14,6 +15,8 @@ from typing import List, Optional, Union
 
 from .auto import AutoDiscovery
 from .base import DiscoveryStrategy, SkillMapping
+
+logger = logging.getLogger(__name__)
 
 
 _GITHUB_URL_PATTERNS = [
@@ -111,6 +114,7 @@ class GitHubDiscovery(DiscoveryStrategy):
             for sp in subpaths:
                 scan_path = repo_root / sp
                 if not scan_path.exists():
+                    logger.error("subpath not found: %s", scan_path)
                     continue
 
                 if scan_path.is_file() and scan_path.suffix == ".md":
