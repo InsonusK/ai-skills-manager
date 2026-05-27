@@ -403,6 +403,46 @@ class TestSkillSyncIntegration(unittest.TestCase):
         self.assertTrue((target / 'ansible').exists())
         self.assertTrue((target / 'ansible' / 'SKILL.md').exists())
 
+    def test_github_source_single_md_file_sync(self):
+        """Sync a single .md file from a mocked GitHub source as a flat skill."""
+        archive = _make_fake_archive(
+            "ai-skills-master",
+            {
+                "docs/quickstart.md": "# Quickstart",
+            },
+        )
+
+        def fake_download(owner, repo, tree):
+            path = self.tmpdir / 'fake_archive.tar.gz'
+            path.write_bytes(archive)
+            return path
+
+        config = self.tmpdir / 'ai-skills.yaml'
+        config.write_text(json.dumps({
+            'sources': [{
+                'type': 'github',
+                'path': 'https://github.com/owner/ai-skills',
+                'tree': 'master',
+                'subfolder': 'docs/quickstart.md',
+            }],
+            'settings': {'target': '.agents/skills'}
+        }))
+
+        with patch(
+            'ai_skills_manager.discovery.github._download_archive',
+            side_effect=fake_download,
+        ):
+            sync = SkillSync(config_file=config)
+            result = sync.sync()
+
+        self.assertEqual(result['synced_count'], 1)
+        self.assertEqual(result['skipped_count'], 0)
+
+        target = self.tmpdir / '.agents' / 'skills' / 'quickstart'
+        self.assertTrue(target.exists())
+        self.assertTrue((target / 'SKILL.md').exists())
+        self.assertEqual((target / 'SKILL.md').read_text(), '# Quickstart')
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -115,6 +115,14 @@ class GitHubDiscovery(DiscoveryStrategy):
                 self.cleanup()
                 return []
 
+            if scan_path.is_file() and scan_path.suffix == ".md":
+                # Single markdown file selected directly — treat as flat skill
+                return [
+                    self._create_mapping(
+                        scan_path, scan_path.stem, is_flat=True
+                    )
+                ]
+
             strategy_class = _SCAN_MAP.get(self.scan, AutoDiscovery)
             strategy = strategy_class(scan_path, self.target_dir)
             return strategy.discover()

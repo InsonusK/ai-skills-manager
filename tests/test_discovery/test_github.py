@@ -339,6 +339,78 @@ class TestGitHubDiscovery(unittest.TestCase):
         self.assertTrue((skill_dir / "extra.md").exists())
         self.assertEqual((skill_dir / "extra.md").read_text(), "# Extra")
 
+    def test_discover_single_md_file(self):
+        """A single .md file selected via subfolder is treated as a flat skill."""
+        archive = _make_fake_archive(
+            "repo-main",
+            {
+                "skills/nested/guide.md": "# Guide",
+            },
+        )
+
+        with self._mock_download(archive):
+            strategy = GitHubDiscovery(
+                "https://github.com/owner/repo",
+                self.target,
+                tree="main",
+                subfolder="skills/nested/guide.md",
+                scan="auto",
+            )
+            result = strategy.discover()
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].skill_name, "guide")
+        self.assertTrue(result[0].is_flat)
+        self.assertTrue(result[0].source_path.exists())
+
+    def test_discover_single_md_file_copies_correctly(self):
+        """End-to-end: discover a single .md file and copy it as a flat skill."""
+        archive = _make_fake_archive(
+            "repo-main",
+            {
+                "docs/quickstart.md": "# Quickstart",
+            },
+        )
+
+        with self._mock_download(archive):
+            strategy = GitHubDiscovery(
+                "https://github.com/owner/repo",
+                self.target,
+                tree="main",
+                subfolder="docs/quickstart.md",
+            )
+            result = strategy.discover()
+
+        self.assertEqual(len(result), 1)
+        mapping = result[0]
+        self.assertEqual(mapping.skill_name, "quickstart")
+        self.assertTrue(mapping.is_flat)
+
+        copy_skill(mapping, dry_run=False)
+
+        skill_dir = self.target / "quickstart"
+        self.assertTrue(skill_dir.exists())
+        self.assertTrue((skill_dir / "SKILL.md").exists())
+        self.assertEqual((skill_dir / "SKILL.md").read_text(), "# Quickstart")
+
+    def test_discover_single_nonexistent_file_returns_empty(self):
+        """Selecting a missing file returns an empty list."""
+        archive = _make_fake_archive(
+            "repo-main",
+            {"skills/guide.md": "# Guide"},
+        )
+
+        with self._mock_download(archive):
+            strategy = GitHubDiscovery(
+                "https://github.com/owner/repo",
+                self.target,
+                tree="main",
+                subfolder="skills/missing.md",
+            )
+            result = strategy.discover()
+
+        self.assertEqual(len(result), 0)
+
 
 class TestFindExtractedRoot(unittest.TestCase):
     def setUp(self):
