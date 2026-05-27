@@ -1,6 +1,6 @@
 # AI Skills Manager
 
-Sync AI agent skills into `.agents/skills/` from one or more source directories.
+Sync AI agent skills into `.agents/skills/` from local directories or GitHub repositories.
 
 ## Quick start
 
@@ -20,7 +20,7 @@ settings:
 Run the sync:
 
 ```bash
-ai-skills-sync
+ai-skills
 ```
 
 ## Documentation
@@ -31,7 +31,7 @@ ai-skills-sync
 
 ## What it does
 
-- Discovers skills from source directories using configurable strategies (`auto`, `flat`, `directory`).
+- Discovers skills from local directories (`auto`, `flat`, `directory`) or GitHub repositories.
 - Copies them to a target directory (default: `.agents/skills`).
 - Removes orphan skills that are no longer in the config (optional).
 - Updates internal links so they point to the correct target paths.

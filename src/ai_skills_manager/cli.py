@@ -7,7 +7,7 @@ from .commands import sync, new
 
 def main():
     parser = argparse.ArgumentParser(
-        prog='ai-skills-sync',
+        prog='ai-skills',
         description='AI skills manager CLI',
     )
     subparsers = parser.add_subparsers(dest='command', required=True)

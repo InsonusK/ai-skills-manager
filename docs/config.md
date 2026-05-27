@@ -76,7 +76,7 @@ Result target:
 ```
 
 #### `github`
-Downloads a GitHub repository archive and discovers skills from a subfolder within it.
+Downloads a GitHub repository archive and discovers skills from one or more subpaths within it.
 
 **Additional fields:**
 
@@ -84,17 +84,31 @@ Downloads a GitHub repository archive and discovers skills from a subfolder with
 |-------|----------|---------|-------------|
 | `path` | Yes | — | GitHub repository URL (`https` or `ssh` format) |
 | `tree` | No | `master` | Branch or tag name to checkout |
-| `subfolder` | No | `skills` | Folder inside the repo to scan for skills |
-| `scan` | No | `auto` | Scan mode for the subfolder: `auto`, `flat`, or `dir` |
+| `subpath` | No | `skills` | Path or list of paths inside the repo to scan for skills |
 
-Example:
+Each subpath is processed using **auto** logic:
+- If the path is a directory, it is scanned recursively. Directories containing `SKILL.md` become directory skills; individual `.md` files become flat skills.
+- If the path is a single `.md` file, it is treated as a flat skill.
+- Missing paths are silently skipped.
+
+Example with a single subpath:
 ```yaml
 sources:
   - path: https://github.com/owner/skills-repo.git
     type: github
     tree: main
-    subfolder: skills
-    scan: auto
+    subpath: skills
+```
+
+Example with multiple subpaths:
+```yaml
+sources:
+  - path: https://github.com/owner/skills-repo.git
+    type: github
+    tree: main
+    subpath:
+      - skills
+      - docs/guides.md
 ```
 
 ## `settings`

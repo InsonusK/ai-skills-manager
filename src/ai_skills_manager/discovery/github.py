@@ -1,21 +1,22 @@
 """GitHub source discovery strategy.
 
 Downloads a GitHub repository archive, extracts it to a temp directory,
-and delegates to the appropriate local discovery strategy on a subfolder.
+and discovers skills from one or more subpaths using auto logic.
 """
 
+import logging
 import re
 import shutil
 import tarfile
 import tempfile
 import urllib.request
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from .auto import AutoDiscovery
 from .base import DiscoveryStrategy, SkillMapping
-from .directory import DirectoryDiscovery
-from .flat import FlatDiscovery
+
+logger = logging.getLogger(__name__)
 
 
 _GITHUB_URL_PATTERNS = [
@@ -24,12 +25,6 @@ _GITHUB_URL_PATTERNS = [
     # git@github.com:owner/repo.git
     re.compile(r"git@github\.com:([^/]+)/([^/]+?)(?:\.git)?/?$"),
 ]
-
-_SCAN_MAP = {
-    "auto": AutoDiscovery,
-    "flat": FlatDiscovery,
-    "dir": DirectoryDiscovery,
-}
 
 
 def _parse_github_url(url: str) -> tuple:
@@ -80,7 +75,9 @@ class GitHubDiscovery(DiscoveryStrategy):
     """Discover skills from a GitHub repository.
 
     Downloads the repo archive for the specified tree/branch, extracts it,
-    and delegates discovery to the configured scan strategy on the subfolder.
+    and discovers skills from the configured subpaths using auto logic.
+    Each subpath can be a directory (scanned recursively with auto logic)
+    or a single ``.md`` file (treated as a flat skill).
     """
 
     def __init__(
@@ -88,15 +85,13 @@ class GitHubDiscovery(DiscoveryStrategy):
         source_path,
         target_dir: Path,
         tree: str = "master",
-        subfolder: str = "skills",
-        scan: str = "auto",
+        subpath: Union[str, List[str]] = "skills",
     ):
         # source_path is the repo URL (str or Path-like); avoid base resolve()
         self.repo_url = str(source_path)
         self.target_dir = target_dir
         self.tree = tree
-        self.subfolder = subfolder
-        self.scan = scan
+        self.subpath = subpath
         self._extracted_dir: Optional[Path] = None
 
     def discover(self) -> List[SkillMapping]:
@@ -109,15 +104,31 @@ class GitHubDiscovery(DiscoveryStrategy):
             _extract_archive(archive_path, self._extracted_dir)
 
             repo_root = _find_extracted_root(self._extracted_dir)
-            scan_path = repo_root / self.subfolder
+            subpaths = (
+                self.subpath
+                if isinstance(self.subpath, list)
+                else [self.subpath]
+            )
 
-            if not scan_path.exists():
-                self.cleanup()
-                return []
+            all_mappings: List[SkillMapping] = []
+            for sp in subpaths:
+                scan_path = repo_root / sp
+                if not scan_path.exists():
+                    logger.error("subpath not found: %s", scan_path)
+                    continue
 
-            strategy_class = _SCAN_MAP.get(self.scan, AutoDiscovery)
-            strategy = strategy_class(scan_path, self.target_dir)
-            return strategy.discover()
+                if scan_path.is_file() and scan_path.suffix == ".md":
+                    # Single markdown file selected directly — treat as flat skill
+                    all_mappings.append(
+                        self._create_mapping(
+                            scan_path, scan_path.stem, is_flat=True
+                        )
+                    )
+                else:
+                    strategy = AutoDiscovery(scan_path, self.target_dir)
+                    all_mappings.extend(strategy.discover())
+
+            return all_mappings
         finally:
             archive_path.unlink(missing_ok=True)
 

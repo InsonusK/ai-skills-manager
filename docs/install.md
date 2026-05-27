@@ -29,10 +29,10 @@ pip install -r requirements.txt
 
 ## Verify installation
 
-After installation, the `ai-skills-sync` command should be available:
+After installation, the `ai-skills` command should be available:
 
 ```bash
-ai-skills-sync --help
+ai-skills --help
 ```
 
 Or run the CLI module directly:
