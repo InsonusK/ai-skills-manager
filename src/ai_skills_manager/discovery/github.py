@@ -10,7 +10,7 @@ import tarfile
 import tempfile
 import urllib.request
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 from .auto import AutoDiscovery
 from .base import DiscoveryStrategy, SkillMapping
@@ -97,6 +97,7 @@ class GitHubDiscovery(DiscoveryStrategy):
         self.tree = tree
         self.subfolder = subfolder
         self.scan = scan
+        self._extracted_dir: Optional[Path] = None
 
     def discover(self) -> List[SkillMapping]:
         """Download repo, extract, and discover skills."""
@@ -104,18 +105,24 @@ class GitHubDiscovery(DiscoveryStrategy):
 
         archive_path = _download_archive(owner, repo, self.tree)
         try:
-            with tempfile.TemporaryDirectory() as tmpdir:
-                extract_to = Path(tmpdir)
-                _extract_archive(archive_path, extract_to)
+            self._extracted_dir = Path(tempfile.mkdtemp())
+            _extract_archive(archive_path, self._extracted_dir)
 
-                repo_root = _find_extracted_root(extract_to)
-                scan_path = repo_root / self.subfolder
+            repo_root = _find_extracted_root(self._extracted_dir)
+            scan_path = repo_root / self.subfolder
 
-                if not scan_path.exists():
-                    return []
+            if not scan_path.exists():
+                self.cleanup()
+                return []
 
-                strategy_class = _SCAN_MAP.get(self.scan, AutoDiscovery)
-                strategy = strategy_class(scan_path, self.target_dir)
-                return strategy.discover()
+            strategy_class = _SCAN_MAP.get(self.scan, AutoDiscovery)
+            strategy = strategy_class(scan_path, self.target_dir)
+            return strategy.discover()
         finally:
             archive_path.unlink(missing_ok=True)
+
+    def cleanup(self) -> None:
+        """Remove the extracted archive directory."""
+        if self._extracted_dir is not None and self._extracted_dir.exists():
+            shutil.rmtree(self._extracted_dir)
+            self._extracted_dir = None

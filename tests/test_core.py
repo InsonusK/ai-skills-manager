@@ -1,10 +1,13 @@
 """Tests for core synchronization logic."""
 
+import io
+import tarfile
 import unittest
 import tempfile
 import shutil
 import json
 from pathlib import Path
+from unittest.mock import patch
 
 from ai_skills_manager.core import (
     SkillSync,
@@ -14,6 +17,19 @@ from ai_skills_manager.core import (
 )
 from ai_skills_manager.discovery.base import SkillMapping
 from ai_skills_manager.utils import is_managed
+
+
+def _make_fake_archive(repo_name: str, files: dict) -> bytes:
+    """Create a tar.gz archive in memory."""
+    buf = io.BytesIO()
+    with tarfile.open(fileobj=buf, mode="w:gz") as tar:
+        for rel_path, content in files.items():
+            arcname = f"{repo_name}/{rel_path}"
+            data = content.encode("utf-8")
+            info = tarfile.TarInfo(name=arcname)
+            info.size = len(data)
+            tar.addfile(info, io.BytesIO(data))
+    return buf.getvalue()
 
 
 class TestBuildSourceToTargetMap(unittest.TestCase):
@@ -341,6 +357,51 @@ class TestSkillSyncIntegration(unittest.TestCase):
         result = sync.sync()
         self.assertEqual(result['synced_count'], 1)
         self.assertEqual(result['skipped_count'], 0)
+
+    def test_github_source_sync(self):
+        """Full sync with a mocked GitHub source."""
+        archive = _make_fake_archive(
+            "ai-skills-master",
+            {
+                "skills/version-control/SKILL.md": "# Version Control",
+                "skills/version-control/extra.md": "# Extra",
+                "skills/ansible/SKILL.md": "# Ansible",
+            },
+        )
+
+        def fake_download(owner, repo, tree):
+            path = self.tmpdir / 'fake_archive.tar.gz'
+            path.write_bytes(archive)
+            return path
+
+        config = self.tmpdir / 'ai-skills.yaml'
+        config.write_text(json.dumps({
+            'sources': [{
+                'type': 'github',
+                'path': 'https://github.com/owner/ai-skills',
+                'tree': 'master',
+                'subfolder': 'skills',
+                'scan': 'auto',
+            }],
+            'settings': {'target': '.agents/skills'}
+        }))
+
+        with patch(
+            'ai_skills_manager.discovery.github._download_archive',
+            side_effect=fake_download,
+        ):
+            sync = SkillSync(config_file=config)
+            result = sync.sync()
+
+        self.assertEqual(result['synced_count'], 2)
+        self.assertEqual(result['skipped_count'], 0)
+
+        target = self.tmpdir / '.agents' / 'skills'
+        self.assertTrue((target / 'version-control').exists())
+        self.assertTrue((target / 'version-control' / 'SKILL.md').exists())
+        self.assertTrue((target / 'version-control' / 'extra.md').exists())
+        self.assertTrue((target / 'ansible').exists())
+        self.assertTrue((target / 'ansible' / 'SKILL.md').exists())
 
 
 if __name__ == '__main__':

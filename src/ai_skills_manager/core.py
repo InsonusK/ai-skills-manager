@@ -187,72 +187,79 @@ class SkillSync:
 
         # Discover skills from all sources
         all_mappings: List[SkillMapping] = []
+        strategies = []
 
-        for src in sources:
-            src_type = src.get('type', 'auto')
-            strategy_class = STRATEGIES.get(src_type, AutoDiscovery)
+        try:
+            for src in sources:
+                src_type = src.get('type', 'auto')
+                strategy_class = STRATEGIES.get(src_type, AutoDiscovery)
 
-            if src_type == 'github':
-                repo_url = src.get('path', '')
-                tree = src.get('tree', 'master')
-                subfolder = src.get('subfolder', 'skills')
-                scan = src.get('scan', 'auto')
-                strategy = strategy_class(
-                    repo_url, self.target_dir, tree=tree, subfolder=subfolder, scan=scan
-                )
-            else:
-                src_path = self.config_dir / src.get('path', '.')
-                strategy = strategy_class(src_path, self.target_dir)
+                if src_type == 'github':
+                    repo_url = src.get('path', '')
+                    tree = src.get('tree', 'master')
+                    subfolder = src.get('subfolder', 'skills')
+                    scan = src.get('scan', 'auto')
+                    strategy = strategy_class(
+                        repo_url, self.target_dir, tree=tree, subfolder=subfolder, scan=scan
+                    )
+                else:
+                    src_path = self.config_dir / src.get('path', '.')
+                    strategy = strategy_class(src_path, self.target_dir)
 
-            discovered = strategy.discover()
+                discovered = strategy.discover()
+                strategies.append(strategy)
 
-            # Apply explicit name override
-            if 'name' in src and discovered:
-                for mapping in discovered:
-                    mapping.skill_name = src['name']
+                # Apply explicit name override
+                if 'name' in src and discovered:
+                    for mapping in discovered:
+                        mapping.skill_name = src['name']
 
-            all_mappings.extend(discovered)
+                all_mappings.extend(discovered)
 
-        # Resolve conflicts
-        self.mappings = self._resolve_conflicts(all_mappings)
+            # Resolve conflicts
+            self.mappings = self._resolve_conflicts(all_mappings)
 
-        # Build maps
-        source_to_target = build_source_to_target_map(self.mappings)
-        all_source_files = collect_source_files(self.mappings)
+            # Build maps
+            source_to_target = build_source_to_target_map(self.mappings)
+            all_source_files = collect_source_files(self.mappings)
 
-        # Prepare adapters
-        updater = LinkUpdater(self.mappings, source_to_target, all_source_files, self.dry_run)
-        adapters = [updater]
+            # Prepare adapters
+            updater = LinkUpdater(self.mappings, source_to_target, all_source_files, self.dry_run)
+            adapters = [updater]
 
-        # Ensure target exists
-        if not self.dry_run:
-            self.target_dir.mkdir(parents=True, exist_ok=True)
+            # Ensure target exists
+            if not self.dry_run:
+                self.target_dir.mkdir(parents=True, exist_ok=True)
 
-        # Copy skills
-        skipped = 0
-        for mapping in self.mappings:
-            if mapping.target_path.exists() and not is_managed(mapping.target_path):
-                continue  # Skip non-managed existing skills
-            if not should_copy_skill(mapping, adapters, force=self.force):
-                skipped += 1
-                continue
-            copy_skill(mapping, self.dry_run, adapters=adapters)
+            # Copy skills
+            skipped = 0
+            for mapping in self.mappings:
+                if mapping.target_path.exists() and not is_managed(mapping.target_path):
+                    continue  # Skip non-managed existing skills
+                if not should_copy_skill(mapping, adapters, force=self.force):
+                    skipped += 1
+                    continue
+                copy_skill(mapping, self.dry_run, adapters=adapters)
 
-        # Fix links
-        fixes = updater.adapt_all(self.target_dir)
+            # Fix links
+            fixes = updater.adapt_all(self.target_dir)
 
-        fix_summary = {}
-        for fix in fixes:
-            fix_summary[fix['status']] = fix_summary.get(fix['status'], 0) + 1
+            fix_summary = {}
+            for fix in fixes:
+                fix_summary[fix['status']] = fix_summary.get(fix['status'], 0) + 1
 
-        # Remove orphans
-        if self.remove_orphans:
-            valid_names = {m.skill_name for m in self.mappings}
-            remove_orphans(self.target_dir, valid_names, self.dry_run)
+            # Remove orphans
+            if self.remove_orphans:
+                valid_names = {m.skill_name for m in self.mappings}
+                remove_orphans(self.target_dir, valid_names, self.dry_run)
 
-        return {
-            'synced_count': len(self.mappings) - skipped,
-            'skipped_count': skipped,
-            'fix_summary': fix_summary,
-            'dry_run': self.dry_run,
-        }
+            return {
+                'synced_count': len(self.mappings) - skipped,
+                'skipped_count': skipped,
+                'fix_summary': fix_summary,
+                'dry_run': self.dry_run,
+            }
+        finally:
+            for strategy in strategies:
+                if hasattr(strategy, 'cleanup'):
+                    strategy.cleanup()
